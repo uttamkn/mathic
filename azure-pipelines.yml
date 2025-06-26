@@ -1,0 +1,37 @@
+# Azure Pipeline for Node.js application
+
+trigger:
+- main # Triggers the pipeline on pushes to the 'main' branch
+
+pool:
+  vmImage: 'ubuntu-latest' # Specifies the virtual machine image to use
+
+steps:
+- task: UseNode@1
+  displayName: 'Use Node.js 20.x' # Task to set up Node.js environment
+  inputs:
+    version: '20.x' # Specifies the Node.js version to use
+
+- script: |
+    npm install # Installs project dependencies
+  displayName: 'Install Dependencies' # Display name for the step
+
+- script: |
+    npm run test # Runs project tests
+  displayName: 'Run Tests' # Display name for the step
+
+- script: |
+    npm run lint # Runs linting checks
+  displayName: 'Run Lint' # Display name for the step
+
+- script: |
+    npm run build # Builds the project for production
+  displayName: 'Build Project' # Display name for the step
+
+# Optional: You can add steps here to publish build artifacts, deploy, etc.
+# Example to publish build artifacts:
+# - task: PublishBuildArtifacts@1
+#   displayName: 'Publish Build Artifacts'
+#   inputs:
+#     pathToPublish: '$(System.DefaultWorkingDirectory)/build' # Assuming 'build' is your output directory
+#     artifactName: 'drop' # Name of the artifact
