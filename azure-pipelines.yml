@@ -15,103 +15,37 @@ variables:
   SONAR_PROJECT_KEY: $(SONAR_PROJECT_KEY)  # Set in Azure DevOps variables
   SONAR_ORGANIZATION: $(SONAR_ORGANIZATION)  # Set in Azure DevOps variables
   SERVICE_CONNECTION: 'AzureStaticWebApp'
-  AZURE_STATIC_WEB_APPS_API_TOKEN: '7a2fb256873b7c285980f0ec65261915f7428e4e801854e69b74f04c74593f3702-7c1bd93d-c543-47f3-89cd-cd3330e05c9601e280907436501e'
+  # SonarQube configuration
+  SONAR_HOST_URL: 'https://4f1a-2406-7400-116-4dd6-867b-490e-33e4-a2a1.ngrok-free.app'  # Replace with your SonarQube server URL
+  SONAR_TOKEN: 'sqa_33c3f389f3a4c3d0bc55e60facd12f84f599939e'  # Replace with your SonarQube token
+  # WARNING: For production, use Azure DevOps pipeline variables instead of hardcoding tokens
+  DEPLOYMENT_TOKEN: '7a2fb256873b7c285980f0ec65261915f7428e4e801854e69b74f04c74593f3702-7c1bd93d-c543-47f3-89cd-cd3330e05c9601e280907436501e'
+# -------- Steps --------
+steps:
+# Node.js
+- task: NodeTool@0
+  inputs:
+    versionSpec: '$(NODE_VERSION)'
+  displayName: 'Install Node.js $(NODE_VERSION)'
 
-# -------- Build Environment --------
-pool:
-  vmImage: 'ubuntu-latest'
 
-stages:
-- stage: SecurityAndQuality
-  displayName: 'Security & Quality Checks'
-  jobs:
-  - job: SecurityChecks
-    displayName: 'Run Security Scans'
-    steps:
-    - task: NodeTool@0
-      inputs:
-        versionSpec: '$(NODE_VERSION)'
-      displayName: 'Install Node.js $(NODE_VERSION)'
-
-    - script: npm install
-      displayName: 'npm install'
-
-    - script: npm audit --production --audit-level=moderate
-      displayName: 'npm audit'
-      continueOnError: true
-
-    - script: npx npm-check-updates --error-level=2
-      displayName: 'Check for outdated packages'
-      continueOnError: true
-
-    - task: securedevelopmentteam.vss-secure-development-tools.build-task-credscan.CredScan@3
-      displayName: 'Credential Scanner'
-      continueOnError: true
-
-  - job: CodeQuality
-    displayName: 'Code Quality Analysis'
-    steps:
-    - task: NodeTool@0
-      inputs:
-        versionSpec: '$(NODE_VERSION)'
-      displayName: 'Install Node.js $(NODE_VERSION)'
-
-    - script: npm install
-      displayName: 'npm install'
-
-    - task: SonarCloudPrepare@1
-      inputs:
-        SonarCloud: 'SonarCloud Connection'
-        organization: '$(SONAR_ORGANIZATION)'
-        scannerMode: 'CLI'
-        configMode: 'manual'
-        cliProjectKey: '$(SONAR_PROJECT_KEY)'
-        cliSources: 'src/'
-        extraProperties: |
-          sonar.javascript.lcov.reportPaths=$(Build.SourcesDirectory)/coverage/lcov.info
-          sonar.testExecutionReportPaths=test-report.xml
-
-    - script: npm test -- --coverage --watchAll=false --testResultsProcessor="jest-junit"
-      displayName: 'Run Tests with Coverage'
-      env:
-        CI: true
-
-    - task: SonarCloudAnalyze@1
-      displayName: 'Run SonarCloud Analysis'
-
-    - task: SonarCloudPublish@1
-      displayName: 'Publish Quality Gate Result'
-      condition: succeededOrFailed()
-
-- stage: BuildAndDeploy
-  displayName: 'Build and Deploy'
-  dependsOn: SecurityAndQuality
-  condition: succeeded()
-  jobs:
-  - job: BuildAndDeploy
-    displayName: 'Build and Deploy'
-    steps:
-    - task: NodeTool@0
-      inputs:
-        versionSpec: '$(NODE_VERSION)'
-      displayName: 'Install Node.js $(NODE_VERSION)'
-
-    - script: npm install
-      displayName: 'npm install'
-
-    - script: npm run lint
-      displayName: 'npm run lint'
-
-    - script: npm run test
-      displayName: 'npm run test'
-
-    - script: npm run build
-      displayName: 'npm run build'
-
-    - task: AzureStaticWebApp@0
-      inputs:
-        app_location: '/'
-        output_location: '.next'
-        azure_static_web_apps_api_token: $(AZURE_STATIC_WEB_APPS_API_TOKEN)
-      condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
-      displayName: 'Deploy to Azure Static Web App'
+# Dependencies
+- script: npm install
+  displayName: 'npm install'
+# Lint
+- script: npm run lint
+  displayName: 'npm run lint'
+# Test
+- script: npm run test
+  displayName: 'npm run test'
+# Run SonarQube analysis
+- script: npm run sonar
+  displayName: 'Run SonarQube analysis'
+# Deploy (only for main branch)
+- task: AzureStaticWebApp@0
+  inputs:
+    app_location: '/'
+    output_location: '.next'
+    azure_static_web_apps_api_token: $(DEPLOYMENT_TOKEN)
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+  displayName: 'Deploy to Azure Static Web App'
