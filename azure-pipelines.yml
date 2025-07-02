@@ -16,8 +16,11 @@ pool:
 
 # -------- Variables --------
 variables:
-  NODE_VERSION: '18.x'
-  SERVICE_CONNECTION: 'AzureStaticWebApp'   # DevOps service connection name
+- group: 'StaticWebAppSecrets'
+- name: NODE_VERSION
+  value: '18.x'
+- name: SERVICE_CONNECTION
+  value: 'AzureStaticWebApp'
 
 # -------- Steps --------
 steps:
