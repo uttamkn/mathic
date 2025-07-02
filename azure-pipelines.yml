@@ -26,25 +26,7 @@ steps:
     versionSpec: '$(NODE_VERSION)'
   displayName: 'Install Node.js $(NODE_VERSION)'
 
-# SonarQube Prepare
-- task: SonarQubePrepare@5
-  inputs:
-    SonarQube: 'SonarQubeCommunityBuild'  # Service connection name for your SonarQube server
-    scannerMode: 'CLI'
-    configMode: 'manual'
-    cliProjectKey: 'mathic'
-    cliProjectName: 'MATHIC'
-    cliSources: '.'
-    extraProperties: |
-      sonar.javascript.lcov.reportPaths=coverage/lcov.info
-      sonar.sourceEncoding=UTF-8
-      sonar.host.url=$(SONAR_HOST_URL)
-      sonar.login=$(SONAR_TOKEN)
-      # Exclude node_modules and coverage directories from analysis
-      sonar.exclusions=**/node_modules/**,**/coverage/**,**/*.test.ts
-      # Disable branch analysis for Community Edition
-      sonar.branch.autodetection=false
-  displayName: 'Prepare analysis on SonarQube'
+
 # Dependencies
 - script: npm install
   displayName: 'npm install'
@@ -54,16 +36,10 @@ steps:
 # Test
 - script: npm run test
   displayName: 'npm run test'
-# SonarQube - Run analysis
-- task: SonarQubeAnalyze@5
+# Run SonarQube analysis
+- script: npm run sonar
   displayName: 'Run SonarQube analysis'
-
-# SonarQube - Publish Quality Gate results
-- task: SonarQubePublish@5
-  inputs:
-    pollingTimeoutSec: '300'              # Wait up to 5 min for Quality Gate (optional)
-  displayName: 'Publish SonarQube Quality Gate results'
-# 6. Deploy (only for main branch)
+# Deploy (only for main branch)
 - task: AzureStaticWebApp@0
   inputs:
     app_location: '/'

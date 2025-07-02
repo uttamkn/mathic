@@ -1,0 +1,6 @@
+projectKey=mathic
+serverUrl=http://localhost:9000
+serverVersion=25.5.0.107428
+dashboardUrl=http://localhost:9000/dashboard?id=mathic
+ceTaskId=f2a59ddb-cecd-443e-95e9-51d6affa6cba
+ceTaskUrl=http://localhost:9000/api/ce/task?id=f2a59ddb-cecd-443e-95e9-51d6affa6cba
