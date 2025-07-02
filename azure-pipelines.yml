@@ -22,6 +22,16 @@ steps:
   inputs:
     versionSpec: '$(NODE_VERSION)'
   displayName: 'Install Node.js $(NODE_VERSION)'
+
+# 1b. SonarQube Prepare
+- task: SonarQubePrepare@5
+  inputs:
+    SonarQube: 'SonarQubeCommunityBuild'  # Service connection name for your SonarQube server
+    scannerMode: 'CLI'                    # Use standalone/CLI scanner
+    configMode: 'manual'                  # Manually provide configuration
+    cliProjectKey: 'mathic'               # SonarQube project key
+    cliSources: '.'                       # Source directory to scan
+  displayName: 'Prepare analysis on SonarQube'
 # 2. Dependencies
 - script: npm install
   displayName: 'npm install'
@@ -34,6 +44,16 @@ steps:
 # 5. Build
 - script: npm run build
   displayName: 'npm run build'
+
+# SonarQube - Run analysis
+- task: SonarQubeAnalyze@5
+  displayName: 'Run SonarQube analysis'
+
+# SonarQube - Publish Quality Gate results
+- task: SonarQubePublish@5
+  inputs:
+    pollingTimeoutSec: '300'              # Wait up to 5 min for Quality Gate (optional)
+  displayName: 'Publish SonarQube Quality Gate results'
 # 6. Deploy (only for main branch)
 - task: AzureStaticWebApp@0
   inputs:
