@@ -35,11 +35,15 @@ steps:
 - script: npm run lint
   displayName: 'npm run lint'
 
-# 4. Build
+# 4. Test
+- script: npm run test
+  displayName: 'npm run test'
+
+# 5. Build
 - script: npm run build
   displayName: 'npm run build'
 
-# 5. Detect output dir (out / .next / build / dist)
+# 6. Detect output dir (out / .next / build / dist)
 - bash: |
     set -e
     if [ -d "./out" ]; then DIR="out";
@@ -62,4 +66,5 @@ steps:
     azureSubscription: '$(SERVICE_CONNECTION)'
     app_location: '/'                       # repo root
     output_location: '$(BUILD_OUTPUT_DIR)'
+    azureStaticWebAppsApiToken: '$(AZURE_STATIC_WEB_APPS_API_TOKEN)'  # defined as secret variable
     skip_app_build: true                    # we already built the app
