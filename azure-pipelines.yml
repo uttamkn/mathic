@@ -40,6 +40,10 @@ steps:
       sonar.sourceEncoding=UTF-8
       sonar.host.url=$(SONAR_HOST_URL)
       sonar.login=$(SONAR_TOKEN)
+      # Exclude node_modules and coverage directories from analysis
+      sonar.exclusions=**/node_modules/**,**/coverage/**,**/*.test.ts
+      # Disable branch analysis for Community Edition
+      sonar.branch.autodetection=false
   displayName: 'Prepare analysis on SonarQube'
 # 2. Dependencies
 - script: npm install
