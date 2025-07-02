@@ -27,10 +27,16 @@ steps:
 - task: SonarQubePrepare@5
   inputs:
     SonarQube: 'SonarQubeCommunityBuild'  # Service connection name for your SonarQube server
-    scannerMode: 'CLI'                    # Use standalone/CLI scanner
-    configMode: 'manual'                  # Manually provide configuration
-    cliProjectKey: 'mathic'               # SonarQube project key
-    cliSources: '.'                       # Source directory to scan
+    scannerMode: 'CLI'
+    configMode: 'manual'
+    cliProjectKey: 'mathic'
+    cliProjectName: 'MATHIC'
+    cliSources: '.'
+    extraProperties: |
+      sonar.javascript.lcov.reportPaths=coverage/lcov.info
+      sonar.sourceEncoding=UTF-8
+      sonar.host.url=$(SONAR_HOST_URL)
+      sonar.login=$(SONAR_TOKEN)
   displayName: 'Prepare analysis on SonarQube'
 # 2. Dependencies
 - script: npm install
