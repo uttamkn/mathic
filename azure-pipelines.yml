@@ -1,17 +1,19 @@
 trigger:
   branches:
     include:
-      - main            # build + deploy on pushes
+      - main  # build + deploy on pushes
+
 pr:
   branches:
     include:
-      - main            # build validation on PRs
-# -------- Build Environment --------
-pool:
-  vmImage: 'ubuntu-latest'
+      - main  # build validation on PRs
+
 # -------- Variables --------
 variables:
   NODE_VERSION: '18.x'
+  SONAR_TOKEN: $(SONAR_TOKEN)  # Set in Azure DevOps variables
+  SONAR_PROJECT_KEY: $(SONAR_PROJECT_KEY)  # Set in Azure DevOps variables
+  SONAR_ORGANIZATION: $(SONAR_ORGANIZATION)  # Set in Azure DevOps variables
   SERVICE_CONNECTION: 'AzureStaticWebApp'
   # SonarQube configuration
   SONAR_HOST_URL: 'https://4f1a-2406-7400-116-4dd6-867b-490e-33e4-a2a1.ngrok-free.app'  # Replace with your SonarQube server URL
