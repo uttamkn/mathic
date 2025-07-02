@@ -11,11 +11,8 @@ pool:
   vmImage: 'ubuntu-latest'
 # -------- Variables --------
 variables:
-- group: 'StaticWebAppSecrets'
-- name: NODE_VERSION
-  value: '18.x'
-- name: SERVICE_CONNECTION
-  value: 'AzureStaticWebApp'
+  NODE_VERSION: '18.x'
+  SERVICE_CONNECTION: 'AzureStaticWebApp'
 # -------- Steps --------
 steps:
 # 1. Node.js
