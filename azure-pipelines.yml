@@ -28,8 +28,8 @@ steps:
   displayName: 'Install Node.js $(NODE_VERSION)'
 
 # 2. Dependencies
-- script: npm ci
-  displayName: 'npm ci (clean install)'
+- script: npm install
+  displayName: 'npm install'
 
 # 3. Lint
 - script: npm run lint
