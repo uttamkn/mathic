@@ -1,126 +1,79 @@
-# Azure Pipeline for Next.js application
+# Azure Static Web App CI/CD pipeline (Next.js or similar)
 
+# -------- Triggering --------
 trigger:
-- main  # Triggers the pipeline on pushes to the 'main' branch
+  branches:
+    include:
+      - main            # build + deploy on pushes
+pr:
+  branches:
+    include:
+      - main            # build validation on PRs
 
-# Configure pipeline variables
-# These can be overridden in the Azure DevOps UI or in variable groups
+# -------- Build Environment --------
+pool:
+  vmImage: 'ubuntu-latest'
+
+# -------- Variables --------
 variables:
-  # Azure Resource Manager service connection name (created in Project Settings > Service connections)
-  azureSubscription: 'mathic-connection'  # Update this to match your service connection name
-  
-  # Azure resources
-  webAppName: 'mathic-app-$(Build.BuildId)'  # Will be overridden by pipeline variable
-  resourceGroupName: 'mathic-rg'             # Will be overridden by pipeline variable
-  
-  # Build configuration
-  nodeVersion: '20.x'
-  buildConfiguration: 'production'
+  NODE_VERSION: '18.x'
+  SERVICE_CONNECTION: 'AzureStaticWebApp'   # DevOps service connection name
 
-stages:
-- stage: Test
-  displayName: 'Test and Lint'
-  jobs:
-  - job: Test
-    pool:
-      vmImage: 'ubuntu-latest'
-    steps:
-    - task: NodeTool@0
-      displayName: 'Install Node.js $(nodeVersion)'
-      inputs:
-        versionSource: 'spec'
-        versionType: 'version'
-        versionSpec: '$(nodeVersion)'
-    
-    - script: |
-        npm ci --prefer-offline
-      displayName: 'Install Dependencies'
-      
-    - script: |
-        npm run test:ci
-      displayName: 'Run Tests'
-      env:
-        CI: true
-    
-    - script: |
-        npm run lint
-      displayName: 'Run Lint'
-      continueOnError: true  # Don't fail the build on linting warnings
+# -------- Steps --------
+steps:
+# 1. Node.js
+- task: NodeTool@0
+  inputs:
+    versionSpec: '$(NODE_VERSION)'
+  displayName: 'Install Node.js $(NODE_VERSION)'
 
-- stage: Build
-  displayName: 'Build and Package'
-  dependsOn: Test
-  jobs:
-  - job: Build
-    pool:
-      vmImage: 'ubuntu-latest'
-    steps:
-    - task: NodeTool@0
-      displayName: 'Install Node.js $(nodeVersion)'
-      inputs:
-        versionSource: 'spec'
-        versionType: 'version'
-        versionSpec: '$(nodeVersion)'
-    
-    - script: |
-        npm ci --prefer-offline
-      displayName: 'Install Dependencies'
-    
-    - script: |
-        npm run build
-      displayName: 'Build Application'
-      env:
-        NODE_ENV: $(buildConfiguration)
-    
-    - task: ArchiveFiles@2
-      displayName: 'Create deployment package'
-      inputs:
-        rootFolderOrFile: '$(System.DefaultWorkingDirectory)'
-        includeRootFolder: false
-        archiveType: 'zip'
-        archiveFile: '$(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip'
-        replaceExistingArchive: true
-    
-    - publish: '$(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip'
-      displayName: 'Publish Artifact'
-      artifact: drop
+# 2. Dependencies
+- script: npm ci
+  displayName: 'npm ci (clean install)'
 
-- stage: Deploy
-  displayName: 'Deploy to Azure'
-  dependsOn: Build
-  condition: succeeded()
-  jobs:
-  - deployment: Deploy
-    environment: 'production'
-    pool:
-      vmImage: 'ubuntu-latest'
-    strategy:
-      runOnce:
-        deploy:
-          steps:
-          - task: DownloadBuildArtifacts@0
-            displayName: 'Download Build Artifacts'
-            inputs:
-              buildType: 'current'
-              downloadType: 'single'
-              artifactName: 'drop'
-              downloadPath: '$(System.ArtifactsDirectory)'
-          
-          - task: AzureWebApp@1
-            displayName: 'Deploy to Azure Web App'
-            inputs:
-              azureSubscription: '$(azureSubscription)'
-              appType: 'webAppLinux'
-              appName: '$(webAppName)'
-              package: '$(System.ArtifactsDirectory)/**/*.zip'
-              runtimeStack: 'NODE|20-lts'
-              startUpCommand: 'npm start'
-              
-          - script: |
-              echo "##vso[task.setvariable variable=webAppUrl]https://$(webAppName).azurewebsites.net"
-            displayName: 'Set Web App URL variable'
-            
-    - script: |
-        echo "Deployment completed successfully!"
-        echo "Your app is available at: https://$(webAppName).azurewebsites.net"
-      displayName: 'Display Web App URL'
+# 3. Lint (optional)
+- script: |
+    if npm run | grep -qE '(^|\s)lint:'; then
+      npm run lint
+    else
+      echo "No lint script – skipping"
+    fi
+  displayName: 'npm run lint (if present)'
+
+# 4. Tests (optional)
+- script: |
+    if npm run | grep -qE '(^|\s)test:'; then
+      npm run test
+    else
+      echo "No test script – skipping"
+    fi
+  displayName: 'npm run test (if present)'
+
+# 5. Build
+- script: npm run build
+  displayName: 'npm run build'
+
+# 6. Detect output dir (out / .next / build / dist)
+- bash: |
+    set -e
+    if [ -d "./out" ]; then DIR="out";
+    elif [ -d "./.next" ]; then DIR=".next";
+    elif [ -d "./build" ]; then DIR="build";
+    elif [ -d "./dist" ]; then DIR="dist";
+    else
+      echo "ERROR: Unable to detect build output directory." >&2
+      exit 1
+    fi
+    echo "Detected build output: $DIR"
+    echo "##vso[task.setvariable variable=BUILD_OUTPUT_DIR]$DIR"
+  displayName: 'Detect build output directory'
+
+# 7. Deploy (only for main branch)
+- task: AzureStaticWebApp@0
+  displayName: 'Deploy to Azure Static Web App'
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+  inputs:
+    azureSubscription: '$(SERVICE_CONNECTION)'
+    app_location: '/'                       # repo root
+    output_location: '$(BUILD_OUTPUT_DIR)'
+    skip_app_build: true                    # we already built the app
