@@ -1,37 +1,126 @@
-# Azure Pipeline for Node.js application
+# Azure Pipeline for Next.js application
 
 trigger:
-- main # Triggers the pipeline on pushes to the 'main' branch
+- main  # Triggers the pipeline on pushes to the 'main' branch
 
-pool:
-  vmImage: 'ubuntu-latest' # Specifies the virtual machine image to use
+# Configure pipeline variables
+# These can be overridden in the Azure DevOps UI or in variable groups
+variables:
+  # Azure Resource Manager service connection name (created in Project Settings > Service connections)
+  azureSubscription: 'mathic-connection'  # Update this to match your service connection name
+  
+  # Azure resources
+  webAppName: 'mathic-app-$(Build.BuildId)'  # Will be overridden by pipeline variable
+  resourceGroupName: 'mathic-rg'             # Will be overridden by pipeline variable
+  
+  # Build configuration
+  nodeVersion: '20.x'
+  buildConfiguration: 'production'
 
-steps:
-- task: UseNode@1
-  displayName: 'Use Node.js 20.x' # Task to set up Node.js environment
-  inputs:
-    version: '20.x' # Specifies the Node.js version to use
+stages:
+- stage: Test
+  displayName: 'Test and Lint'
+  jobs:
+  - job: Test
+    pool:
+      vmImage: 'ubuntu-latest'
+    steps:
+    - task: NodeTool@0
+      displayName: 'Install Node.js $(nodeVersion)'
+      inputs:
+        versionSource: 'spec'
+        versionType: 'version'
+        versionSpec: '$(nodeVersion)'
+    
+    - script: |
+        npm ci --prefer-offline
+      displayName: 'Install Dependencies'
+      
+    - script: |
+        npm run test:ci
+      displayName: 'Run Tests'
+      env:
+        CI: true
+    
+    - script: |
+        npm run lint
+      displayName: 'Run Lint'
+      continueOnError: true  # Don't fail the build on linting warnings
 
-- script: |
-    npm install # Installs project dependencies
-  displayName: 'Install Dependencies' # Display name for the step
+- stage: Build
+  displayName: 'Build and Package'
+  dependsOn: Test
+  jobs:
+  - job: Build
+    pool:
+      vmImage: 'ubuntu-latest'
+    steps:
+    - task: NodeTool@0
+      displayName: 'Install Node.js $(nodeVersion)'
+      inputs:
+        versionSource: 'spec'
+        versionType: 'version'
+        versionSpec: '$(nodeVersion)'
+    
+    - script: |
+        npm ci --prefer-offline
+      displayName: 'Install Dependencies'
+    
+    - script: |
+        npm run build
+      displayName: 'Build Application'
+      env:
+        NODE_ENV: $(buildConfiguration)
+    
+    - task: ArchiveFiles@2
+      displayName: 'Create deployment package'
+      inputs:
+        rootFolderOrFile: '$(System.DefaultWorkingDirectory)'
+        includeRootFolder: false
+        archiveType: 'zip'
+        archiveFile: '$(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip'
+        replaceExistingArchive: true
+    
+    - publish: '$(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip'
+      displayName: 'Publish Artifact'
+      artifact: drop
 
-- script: |
-    npm run test # Runs project tests
-  displayName: 'Run Tests' # Display name for the step
-
-- script: |
-    npm run lint # Runs linting checks
-  displayName: 'Run Lint' # Display name for the step
-
-- script: |
-    npm run build # Builds the project for production
-  displayName: 'Build Project' # Display name for the step
-
-# Optional: You can add steps here to publish build artifacts, deploy, etc.
-# Example to publish build artifacts:
-# - task: PublishBuildArtifacts@1
-#   displayName: 'Publish Build Artifacts'
-#   inputs:
-#     pathToPublish: '$(System.DefaultWorkingDirectory)/build' # Assuming 'build' is your output directory
-#     artifactName: 'drop' # Name of the artifact
+- stage: Deploy
+  displayName: 'Deploy to Azure'
+  dependsOn: Build
+  condition: succeeded()
+  jobs:
+  - deployment: Deploy
+    environment: 'production'
+    pool:
+      vmImage: 'ubuntu-latest'
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - task: DownloadBuildArtifacts@0
+            displayName: 'Download Build Artifacts'
+            inputs:
+              buildType: 'current'
+              downloadType: 'single'
+              artifactName: 'drop'
+              downloadPath: '$(System.ArtifactsDirectory)'
+          
+          - task: AzureWebApp@1
+            displayName: 'Deploy to Azure Web App'
+            inputs:
+              azureSubscription: '$(azureSubscription)'
+              appType: 'webAppLinux'
+              appName: '$(webAppName)'
+              package: '$(System.ArtifactsDirectory)/**/*.zip'
+              runtimeStack: 'NODE|20-lts'
+              startUpCommand: 'npm start'
+              
+          - script: |
+              echo "##vso[task.setvariable variable=webAppUrl]https://$(webAppName).azurewebsites.net"
+            displayName: 'Set Web App URL variable'
+            
+    - script: |
+        echo "Deployment completed successfully!"
+        echo "Your app is available at: https://$(webAppName).azurewebsites.net"
+      displayName: 'Display Web App URL'
