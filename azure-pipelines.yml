@@ -57,5 +57,5 @@ steps:
     azureSubscription: '$(SERVICE_CONNECTION)'
     app_location: '/'                       # repo root
     output_location: '$(BUILD_OUTPUT_DIR)'
-    azureStaticWebAppsApiToken: '$(deployment_token)'  # Changed from AZURE_STATIC_WEB_APPS_API_TOKEN
+    azureStaticWebAppsApiToken: '$(AZURE_STATIC_WEB_APPS_API_TOKEN)'  # Changed from AZURE_STATIC_WEB_APPS_API_TOKEN
     skip_app_build: true                    # we already built the app
