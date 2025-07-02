@@ -20,13 +20,13 @@ variables:
   DEPLOYMENT_TOKEN: '7a2fb256873b7c285980f0ec65261915f7428e4e801854e69b74f04c74593f3702-7c1bd93d-c543-47f3-89cd-cd3330e05c9601e280907436501e'
 # -------- Steps --------
 steps:
-# 1. Node.js
+# Node.js
 - task: NodeTool@0
   inputs:
     versionSpec: '$(NODE_VERSION)'
   displayName: 'Install Node.js $(NODE_VERSION)'
 
-# 1b. SonarQube Prepare
+# SonarQube Prepare
 - task: SonarQubePrepare@5
   inputs:
     SonarQube: 'SonarQubeCommunityBuild'  # Service connection name for your SonarQube server
@@ -45,19 +45,15 @@ steps:
       # Disable branch analysis for Community Edition
       sonar.branch.autodetection=false
   displayName: 'Prepare analysis on SonarQube'
-# 2. Dependencies
+# Dependencies
 - script: npm install
   displayName: 'npm install'
-# 3. Lint
+# Lint
 - script: npm run lint
   displayName: 'npm run lint'
-# 4. Test
+# Test
 - script: npm run test
   displayName: 'npm run test'
-# 5. Build
-- script: npm run build
-  displayName: 'npm run build'
-
 # SonarQube - Run analysis
 - task: SonarQubeAnalyze@5
   displayName: 'Run SonarQube analysis'
