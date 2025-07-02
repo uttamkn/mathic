@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test": "node --test --loader ts-node/esm"
+    "test": "TS_NODE_COMPILER_OPTIONS=\"{\\\"module\\\":\\\"CommonJS\\\"}\" node --test --require ts-node/register"
   },
   "dependencies": {
     "@radix-ui/react-select": "^2.2.5",
