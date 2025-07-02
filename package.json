@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test": "node --test"
+    "test": "node --test --loader ts-node/esm"
   },
   "dependencies": {
     "@radix-ui/react-select": "^2.2.5",
