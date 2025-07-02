@@ -31,29 +31,15 @@ steps:
 - script: npm ci
   displayName: 'npm ci (clean install)'
 
-# 3. Lint (optional)
-- script: |
-    if npm run | grep -qE '(^|\s)lint:'; then
-      npm run lint
-    else
-      echo "No lint script – skipping"
-    fi
-  displayName: 'npm run lint (if present)'
+# 3. Lint
+- script: npm run lint
+  displayName: 'npm run lint'
 
-# 4. Tests (optional)
-- script: |
-    if npm run | grep -qE '(^|\s)test:'; then
-      npm run test
-    else
-      echo "No test script – skipping"
-    fi
-  displayName: 'npm run test (if present)'
-
-# 5. Build
+# 4. Build
 - script: npm run build
   displayName: 'npm run build'
 
-# 6. Detect output dir (out / .next / build / dist)
+# 5. Detect output dir (out / .next / build / dist)
 - bash: |
     set -e
     if [ -d "./out" ]; then DIR="out";
