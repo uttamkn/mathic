@@ -13,6 +13,9 @@ pool:
 variables:
   NODE_VERSION: '18.x'
   SERVICE_CONNECTION: 'AzureStaticWebApp'
+  # SonarQube configuration
+  SONAR_HOST_URL: 'https://4f1a-2406-7400-116-4dd6-867b-490e-33e4-a2a1.ngrok-free.app'  # Replace with your SonarQube server URL
+  SONAR_TOKEN: 'sqa_33c3f389f3a4c3d0bc55e60facd12f84f599939e'  # Replace with your SonarQube token
   # WARNING: For production, use Azure DevOps pipeline variables instead of hardcoding tokens
   DEPLOYMENT_TOKEN: '7a2fb256873b7c285980f0ec65261915f7428e4e801854e69b74f04c74593f3702-7c1bd93d-c543-47f3-89cd-cd3330e05c9601e280907436501e'
 # -------- Steps --------
