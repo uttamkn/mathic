@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "test": "TS_NODE_COMPILER_OPTIONS=\"{\\\"module\\\":\\\"CommonJS\\\"}\" node --test --require ts-node/register",
-    "sonar": "sonar-scanner -Dsonar.host.url=https://4f1a-2406-7400-116-4dd6-867b-490e-33e4-a2a1.ngrok-free.app -Dsonar.token=sqp_443b51b049b32ef061d08ef0fa39234ccfb96e86"
+    "sonar": "sonar-scanner -Dsonar.host.url=https://cc49-49-204-87-250.ngrok-free.app -Dsonar.token=sqp_443b51b049b32ef061d08ef0fa39234ccfb96e86"
   },
   "dependencies": {
     "@radix-ui/react-select": "^2.2.5",
